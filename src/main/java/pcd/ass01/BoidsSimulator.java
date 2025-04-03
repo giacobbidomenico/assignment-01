@@ -47,11 +47,15 @@ public class BoidsSimulator {
                     updateVelocity.get();
                 }
 
-                /*
-                 * ..then update positions
-                 */
+                final List<Future<Void>> resultsUpdatePosition= new LinkedList<>();
+
                 for (Boid boid : boids) {
-                    boid.updatePos(model);
+                    final Future<Void> res = executor.submit(new UpdatePositionTask(model, boid));
+                    resultsUpdatePosition.add(res);
+                }
+
+                for (Future<Void> updatePos : resultsUpdatePosition) {
+                    updatePos.get();
                 }
 
 
