@@ -76,7 +76,7 @@ public class Boid {
         if (speed > model.getMaxSpeed()) {
             vel = vel.getNormalized().mul(model.getMaxSpeed());
         }
-    }    
+    }
     
     public void updatePos(BoidsModel model) {
 
