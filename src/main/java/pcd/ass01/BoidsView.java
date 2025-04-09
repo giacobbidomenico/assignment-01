@@ -9,10 +9,10 @@ public class BoidsView implements ChangeListener {
 	private final JFrame frame;
     private final InitialPanel initialPanel;
     private SimulationPanel simulationPanel;
-    private final BoidsSimulator simulator;
+    private final TaskBoidsSimulator simulator;
     private final int width, height;
 	
-	public BoidsView(BoidsSimulator simulator, int width, int height) {
+	public BoidsView(TaskBoidsSimulator simulator, int width, int height) {
 		this.simulator = simulator;
 		this.width = width;
 		this.height = height;
@@ -65,7 +65,7 @@ public class BoidsView implements ChangeListener {
         }
     }
 
-    public BoidsSimulator getSimulator() { return simulator; }
+    public TaskBoidsSimulator getSimulator() { return simulator; }
     public int getWidth() { return width; }
     public int getHeight() { return height; }
 }

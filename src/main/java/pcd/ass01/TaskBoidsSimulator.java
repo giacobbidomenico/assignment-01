@@ -1,19 +1,34 @@
-package pcd.ass01.task;
+package pcd.ass01;
 
-import pcd.ass01.Boid;
-import pcd.ass01.BoidsModel;
-import pcd.ass01.BoidsSimulator;
+import pcd.ass01.task.PositionUpdateTask;
+import pcd.ass01.task.VelocityUpdateTask;
+import pcd.ass01.utility.SyncRunning;
+import pcd.ass01.utility.SyncSuspension;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.*;
 
-public class TaskBoidsSimulator extends BoidsSimulator {
+public class TaskBoidsSimulator {
+
+    private static final int FRAMERATE = 25;
+    private static final int N_THREAD = Runtime.getRuntime().availableProcessors() + 1;
+
+    private final BoidsModel model;
+    private final SyncRunning runningMonitor;
+    private final SyncSuspension suspensionMonitor;
+
+    private Optional<BoidsView> view;
+    private int framerate;
 
     private ExecutorService executor;
 
     public TaskBoidsSimulator(BoidsModel model) {
-        super(model);
+        this.model = model;
+        this.runningMonitor = new SyncRunning();
+        this.suspensionMonitor = new SyncSuspension();
+        this.view = Optional.empty();
     }
 
     public void startSimulation(int numBoids) {
@@ -119,4 +134,10 @@ public class TaskBoidsSimulator extends BoidsSimulator {
         }
     }
 
+
+    public void attachView(BoidsView view) {
+        this.view = Optional.of(view);
+    }
+
+    public BoidsModel getModel() { return model; }
 }

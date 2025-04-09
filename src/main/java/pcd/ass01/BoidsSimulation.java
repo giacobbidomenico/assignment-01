@@ -1,7 +1,5 @@
 package pcd.ass01;
 
-import pcd.ass01.task.TaskBoidsSimulator;
-
 public class BoidsSimulation {
 
 	final static double SEPARATION_WEIGHT = 1.0;
@@ -25,9 +23,7 @@ public class BoidsSimulation {
     					MAX_SPEED,
     					PERCEPTION_RADIUS,
     					AVOID_RADIUS); 
-    	BoidsSimulator sim = new TaskBoidsSimulator(model);
-								//new MultiThreadSimulator(model);
-								//new VirtualMultiThreadSimulator(model);
+    	var sim = new TaskBoidsSimulator(model);
     	var view = new BoidsView(sim, SCREEN_WIDTH, SCREEN_HEIGHT);
     	sim.attachView(view);
     }
