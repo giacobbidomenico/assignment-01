@@ -64,8 +64,4 @@ public class SyncSuspension {
             mutex.unlock();
         }
     }
-
-    public boolean isSuspended() {
-        return this.isSuspended;
-    }
 }
