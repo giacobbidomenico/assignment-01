@@ -6,7 +6,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class SyncRunning {
     private boolean isStopped;
-    private boolean isThreadWaiting;
+    private boolean isWaiting;
     private final Lock mutex;
     private final Condition suspendedCondition;
     private final Condition waitEnteredCondition;
@@ -16,21 +16,21 @@ public class SyncRunning {
         this.suspendedCondition = mutex.newCondition();
         this.waitEnteredCondition = mutex.newCondition();
         this.isStopped = false;
-        this.isThreadWaiting = false;
+        this.isWaiting = false;
     }
 
     public void waitIfStopped() {
         mutex.lock();
         try {
             while (isStopped) {
-                isThreadWaiting = true;
-                waitEnteredCondition.signalAll(); // Notifica che il thread è in attesa
-                suspendedCondition.await();       // Attesa effettiva
+                isWaiting = true;
+                waitEnteredCondition.signalAll();
+                suspendedCondition.await();
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         } finally {
-            isThreadWaiting = false; // reset
+            isWaiting = false;
             mutex.unlock();
         }
     }
@@ -38,8 +38,8 @@ public class SyncRunning {
     public void waitUntilArriveWait() {
         mutex.lock();
         try {
-            while (!isThreadWaiting) {
-                waitEnteredCondition.await(); // Attende che il primo thread si sospenda
+            while (!isWaiting) {
+                waitEnteredCondition.await();
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -61,7 +61,7 @@ public class SyncRunning {
         mutex.lock();
         try {
             isStopped = false;
-            suspendedCondition.signalAll(); // Risveglia i thread sospesi
+            suspendedCondition.signalAll();
         } finally {
             mutex.unlock();
         }

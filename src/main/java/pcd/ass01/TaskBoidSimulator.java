@@ -1,9 +1,6 @@
 package pcd.ass01;
 
 
-import pcd.ass01.Boid;
-import pcd.ass01.BoidsModel;
-import pcd.ass01.BoidsView;
 import pcd.ass01.task.PositionUpdateTask;
 import pcd.ass01.task.VelocityUpdateTask;
 import pcd.ass01.utility.SyncSuspension;
@@ -158,7 +155,6 @@ public class TaskBoidSimulator {
     }
 
     public void stopSimulation() {
-
         try {
             this.executor.shutdown();
             this.executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
@@ -167,6 +163,7 @@ public class TaskBoidSimulator {
         }
 
         runningMonitor.stop();
+
         runningMonitor.waitUntilArriveWait();
 
         isStopped.setTrue();
