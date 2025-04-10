@@ -7,6 +7,7 @@ import pcd.ass01.BoidsView;
 import pcd.ass01.task.PositionUpdateTask;
 import pcd.ass01.task.VelocityUpdateTask;
 import pcd.ass01.utility.SyncSuspension;
+import pcd.ass01.utility.SyncRunning;
 import pcd.ass01.utility.SafeBoolean;
 
 import java.util.LinkedList;
@@ -21,6 +22,8 @@ public class TaskBoidSimulator {
     private BoidsModel model;
     private Barrier initialHandshackePoint;
     private Barrier finalHandshakePoint;
+
+    private SyncRunning runningMonitor;
     private SyncSuspension suspensionMonitor;
 
     private ExecutorService executor;
@@ -35,6 +38,7 @@ public class TaskBoidSimulator {
         this.view = Optional.empty();
         this.initialHandshackePoint = new Barrier(2);
         this.finalHandshakePoint = new Barrier(2);
+        this.runningMonitor = new SyncRunning();
         this.suspensionMonitor = new SyncSuspension();
         this.executor = Executors.newFixedThreadPool(N_THREAD);
         this.isStopped = new SafeBoolean();
@@ -67,15 +71,16 @@ public class TaskBoidSimulator {
                 throw new RuntimeException(e);
             }
             this.model.createSimulation(this.nBoids);
-            this.isStopped.setFalse();
             try {
                 this.finalHandshakePoint.notifyJobDone();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
 
-            this.runSimulation();
+            this.isStopped.setFalse();
+            this.runningMonitor.active();
 
+            this.runSimulation();
         }
     }
 
@@ -85,6 +90,7 @@ public class TaskBoidSimulator {
             suspensionMonitor.suspensionUntilResume();
             stateUpdate();
             GUIUpdate(t0);
+            runningMonitor.waitIfStopped();
         }
     }
 
@@ -160,12 +166,15 @@ public class TaskBoidSimulator {
             throw new RuntimeException(e);
         }
 
+        runningMonitor.stop();
+        runningMonitor.waitUntilArriveWait();
+
         isStopped.setTrue();
 
         if (view.isPresent()) {
             view.get().resetToInitialScreen();
         }
-
+        runningMonitor.active();
     }
 
     public void setSeparationWeight(double value) {
