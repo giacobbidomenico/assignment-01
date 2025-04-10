@@ -6,30 +6,34 @@ import javax.swing.event.ChangeListener;
 
 public class BoidsView implements ChangeListener {
 
-	private final JFrame frame;
+    private final JFrame frame;
     private final InitialPanel initialPanel;
     private SimulationPanel simulationPanel;
-    private final TaskBoidsSimulator simulator;
+    private final TaskBoidSimulator simulator;
     private final int width, height;
-	
-	public BoidsView(TaskBoidsSimulator simulator, int width, int height) {
-		this.simulator = simulator;
-		this.width = width;
-		this.height = height;
-		
-		frame = new JFrame("Boids Simulation");
+
+    public BoidsView(TaskBoidSimulator simulator, int width, int height) {
+        this.simulator = simulator;
+        this.width = width;
+        this.height = height;
+
+        frame = new JFrame("Boids Simulation");
         frame.setSize(width, height);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		initialPanel = new InitialPanel(this);
+        initialPanel = new InitialPanel(this);
         frame.setContentPane(initialPanel);
         frame.setVisible(true);
-	}
+    }
 
-	public void update(int frameRate) {
+    public void update(int frameRate) {
         if (simulationPanel != null) {
             simulationPanel.update(frameRate);
         }
+    }
+
+    public String getSuspendResumeButtonText() {
+        return simulationPanel != null ? simulationPanel.getSuspendResumeButtonText() : "";
     }
 
     public void updateSuspendResumeButtonText(String text) {
@@ -57,15 +61,15 @@ public class BoidsView implements ChangeListener {
         JSlider source = (JSlider) e.getSource();
         double value = source.getValue() * 0.1;
         if (source == simulationPanel.getSeparationSlider()) {
-            simulator.getModel().setSeparationWeight(value);
+            simulator.setSeparationWeight(value);
         } else if (source == simulationPanel.getCohesionSlider()) {
-            simulator.getModel().setCohesionWeight(value);
+            simulator.setCohesionWeight(value);
         } else if (source == simulationPanel.getAlignmentSlider()) {
-            simulator.getModel().setAlignmentWeight(value);
+            simulator.setAlignmentWeight(value);
         }
     }
 
-    public TaskBoidsSimulator getSimulator() { return simulator; }
+    public TaskBoidSimulator getSimulator() { return simulator; }
     public int getWidth() { return width; }
     public int getHeight() { return height; }
 }

@@ -1,41 +1,43 @@
 package pcd.ass01;
 
+
 import pcd.ass01.Boid;
 import pcd.ass01.BoidsModel;
 import pcd.ass01.BoidsView;
 import pcd.ass01.task.PositionUpdateTask;
 import pcd.ass01.task.VelocityUpdateTask;
 import pcd.ass01.utility.SyncSuspension;
+import pcd.ass01.utility.SafeBoolean;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
-public class MidTaskBoids {
+public class TaskBoidSimulator {
     private static final int N_THREAD = Runtime.getRuntime().availableProcessors() + 1;
-    private BoidsModel model;
-    private Optional<BoidsView> view;
     private static final int FRAMERATE = 25;
-    private int framerate;
 
-    private int nCores = Runtime.getRuntime().availableProcessors() + 1;
-
-    private Semaphore start;
+    private BoidsModel model;
+    private Barrier initialHandshackePoint;
+    private Barrier finalHandshakePoint;
     private SyncSuspension suspensionMonitor;
+
     private ExecutorService executor;
-
     private int nBoids;
+    private int framerate;
+    private Optional<BoidsView> view;
 
-    private boolean isRunning;
-    private boolean isStopped;
+    private final  SafeBoolean isStopped;
 
-    public MidTaskBoids(BoidsModel model) {
+    public TaskBoidSimulator(BoidsModel model) {
         this.model = model;
-        view = Optional.empty();
-        this.start = new Semaphore(0);
+        this.view = Optional.empty();
+        this.initialHandshackePoint = new Barrier(2);
+        this.finalHandshakePoint = new Barrier(2);
         this.suspensionMonitor = new SyncSuspension();
-        this.suspensionMonitor.active();
+        this.executor = Executors.newFixedThreadPool(N_THREAD);
+        this.isStopped = new SafeBoolean();
     }
 
     public BoidsModel getModel(){
@@ -47,10 +49,11 @@ public class MidTaskBoids {
     }
 
     public void startSimulation(int nBoids){
+        this.executor = Executors.newCachedThreadPool();
         this.nBoids = nBoids;
         try {
-            this.start.release();
-            this.start.acquire();
+            this.initialHandshackePoint.notifyJobDone();
+            this.finalHandshakePoint.notifyJobDone();
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -59,23 +62,27 @@ public class MidTaskBoids {
     public void run(){
         while(true){
             try {
-                this.start.acquire();
+                this.initialHandshackePoint.notifyJobDone();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            this.isRunning = true;
             this.model.createSimulation(this.nBoids);
-            this.start.release();
-            this.isStopped = false;
-            executor = Executors.newFixedThreadPool(N_THREAD);
+            this.isStopped.setFalse();
+            try {
+                this.finalHandshakePoint.notifyJobDone();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+
             this.runSimulation();
+
         }
     }
 
     public void runSimulation() {
-        while (!isStopped) {
+        while (!isStopped.get()) {
             var t0 = System.currentTimeMillis();
-            //suspensionMonitor.suspensionUntilResume();
+            suspensionMonitor.suspensionUntilResume();
             stateUpdate();
             GUIUpdate(t0);
         }
@@ -88,8 +95,10 @@ public class MidTaskBoids {
             final List<Future<Void>> resultsUpdateVelocity = new LinkedList<>();
 
             for (Boid boid : boids) {
-                final Future<Void> res = executor.submit(new VelocityUpdateTask(model,boid));
-                resultsUpdateVelocity.add(res);
+                if (!executor.isShutdown() && !executor.isTerminated()) {
+                    final Future<Void> res = executor.submit(new VelocityUpdateTask(model,boid));
+                    resultsUpdateVelocity.add(res);
+                }
             }
 
             for (Future<Void> updateVelocity : resultsUpdateVelocity) {
@@ -99,8 +108,10 @@ public class MidTaskBoids {
             final List<Future<Void>> resultsUpdatePosition = new LinkedList<>();
 
             for (Boid boid : boids) {
-                final Future<Void> res = executor.submit(new PositionUpdateTask(model, boid));
-                resultsUpdatePosition.add(res);
+                if (!executor.isShutdown() && !executor.isTerminated()) {
+                    final Future<Void> res = executor.submit(new PositionUpdateTask(model, boid));
+                    resultsUpdatePosition.add(res);
+                }
             }
 
             for (Future<Void> updatePos : resultsUpdatePosition) {
@@ -133,19 +144,28 @@ public class MidTaskBoids {
     }
 
     public void toggleSuspendResume() {
-        this.suspensionMonitor.resumeIfSuspended();
+        if (view.isPresent()) {
+            final String s = view.get().getSuspendResumeButtonText();
+            view.get().updateSuspendResumeButtonText(s.equals("Resume") ? "Suspend" : "Resume");
+        }
+        suspensionMonitor.changeState();
     }
 
     public void stopSimulation() {
-        executor.shutdown();
+
         try {
-            executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
+            this.executor.shutdown();
+            this.executor.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        isStopped.setTrue();
+
         if (view.isPresent()) {
             view.get().resetToInitialScreen();
         }
+
     }
 
     public void setSeparationWeight(double value) {
@@ -159,4 +179,6 @@ public class MidTaskBoids {
     public void setCohesionWeight(double value) {
         this.model.setCohesionWeight(value);
     }
+
 }
+

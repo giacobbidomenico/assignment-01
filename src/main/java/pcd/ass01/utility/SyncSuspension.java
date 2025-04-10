@@ -15,6 +15,7 @@ public class SyncSuspension {
         this.isSuspended = false;
     }
 
+
     public void suspend() {
         try {
             mutex.lock();
@@ -24,29 +25,11 @@ public class SyncSuspension {
         }
     }
 
-
-    public void resumeAll() {
-        try {
-            mutex.lock();
-            this.suspendedCondition.signalAll();
-        } finally {
-            mutex.unlock();
-        }
-    }
-    public void resumeIfSuspended() {
+    public void resume() {
         try {
             mutex.lock();
             this.isSuspended = false;
-            this.resumeAll();
-        } finally {
-            mutex.unlock();
-        }
-    }
-
-    public void changeState() {
-        try {
-            mutex.lock();
-            this.isSuspended = !this.isSuspended;
+            this.suspendedCondition.signalAll();
         } finally {
             mutex.unlock();
         }
@@ -60,6 +43,19 @@ public class SyncSuspension {
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
+        } finally {
+            mutex.unlock();
+        }
+    }
+
+    public void changeState() {
+        try {
+            mutex.lock();
+            if(isSuspended) {
+                resume();
+            } else {
+                suspend();
+            }
         } finally {
             mutex.unlock();
         }

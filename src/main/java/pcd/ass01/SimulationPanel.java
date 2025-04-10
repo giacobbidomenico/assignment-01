@@ -70,6 +70,10 @@ public class SimulationPanel extends JPanel {
         suspendResumeButton.setText(text);
     }
 
+    public String getSuspendResumeButtonText() {
+        return suspendResumeButton.getText();
+    }
+
     public JSlider getSeparationSlider() { return separationSlider; }
     public JSlider getCohesionSlider() { return cohesionSlider; }
     public JSlider getAlignmentSlider() { return alignmentSlider; }
